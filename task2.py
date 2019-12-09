@@ -250,7 +250,7 @@ def checkSemanticType(input, strategy):
     if input is None:
         return (('other', 'None'), 1)
     key = input[0].strip()
-    result = ['', '', input[1]]
+    result = ['', '', 1]
     result[0] = getSemanticType(key.lower(), strategy)
     # result[0], result[2] = checkItemInList(key.lower(), neighbor)
     # if result[2] > 70:
@@ -302,11 +302,14 @@ if __name__ == "__main__":
         #     #if item[0][0] == 'other':
         #     print item
         currColumn.semantic_types = [SemanticType(item[0][0], item[0][1], item[1]) for item in items]
+        currColumn.semantic_types = sorted(currColumn.semantic_types, key=lambda x: x.count, reverse=False)
         column_list.append(currColumn)
-        print(currColumn)
+        print("Column %s predicted label is %s" % (column_name, currColumn.semantic_types[0].semantic_type))
+        resultFile.write('%s,%s\n' % (column_name, currColumn.semantic_types[0].semantic_type))
+        print(json.dumps(currColumn, default=lambda x: x.__dict__))
         print("File %s finish" % file)
         if count > 3:
             break
-
+    resultFile.close()
     print(column_list)
     sc.stop()
