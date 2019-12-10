@@ -203,10 +203,10 @@ def checkSemanticType(input, strategy):
     return ((result[0], result[1]), (result[2], result[3]))
 
 def getStrategy(column_name):
-    # if "first" in name:
-    #     return "Name"
-    # else:
-    return [isPhoneNumber, isZipcode, isWebsite, isCoordinates, isBorough, isColor, isStudyArea, isSubject, isSchoolLevel, isCollege, isBuildingClass, isVehicleType, isCity, isNeighborhood, isSchool, isAgency, isLocationType, isPark, isAddress, isStreetName, isBussinessName, isPersonName]
+    if 'name' in column_name:
+        return [isCollege, isCity, isPark, isNeighborhood, isSchool, isAgency, isAddress, isStreetName, isBussinessName, isPhoneNumber, isZipcode, isWebsite, isCoordinates, isBorough, isColor, isSubject, isStudyArea, isSchoolLevel, isBuildingClass, isVehicleType, isLocationType, isPersonName]
+    else:
+        return [isPhoneNumber, isZipcode, isWebsite, isCoordinates, isBorough, isColor, isSubject, isStudyArea, isSchoolLevel, isCollege, isBuildingClass, isVehicleType, isCity, isLocationType, isPark, isNeighborhood, isSchool, isAgency, isAddress, isStreetName, isBussinessName, isPersonName]
 
 def getPredictedLabel(labels):
     sum_count = 0
@@ -242,7 +242,7 @@ if __name__ == "__main__":
     column_type_matrix = [[0 for i in range(len(type_list))] for j in range(len(type_list))]
 
     for file in task2_files:
-        if os.stat('./NYCColumns/' + file).st_size > 1000:
+        if os.stat('./NYCColumns/' + file).st_size > 10000:
             continue
         print("Processing File %s" % file)
         column_name = file.split('.')[0] + '.' + file.split('.')[1]
@@ -253,18 +253,15 @@ if __name__ == "__main__":
         column = column.map(lambda x: (x.split("\t")[0], int(x.split("\t")[1]))) \
                        .map(lambda x: checkSemanticType(x, checkStrategy)) \
                        .reduceByKey(lambda x, y: (x[0] + y[0], x[1] + y[1])) \
-                       .sortBy(lambda x: -x[1][0]) \
-                       .take(2)
-                       # .filter(lambda x: x[1][0] > 1000) \
+                       .sortBy(lambda x: -x[1][0])
 
-        # items = column.collect()
-        # predictedLabel = [getPredictedLabel(items)]
-        predictedLabel = [item[0][0] for item in column]
+        items = column.collect()
+        predictedLabel = [getPredictedLabel(items)]
         column_types[column_name] = predictedLabel
         # for item in items:
         #     #if item[0][0] == 'other':
         #     print item
-        currColumn.semantic_types = [SemanticType(item[0][0], item[0][1], item[1][1]) for item in column]
+        currColumn.semantic_types = [SemanticType(item[0][0], item[0][1], item[1][1]) for item in items]
         
         column_list.append(currColumn)
         print("Column %s predicted label is %s" % (column_name, predictedLabel))
