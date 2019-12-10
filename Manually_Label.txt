@@ -171,7 +171,7 @@ mdcw-n682.Agency_Acronym.txt.gz city_agency
 mdcw-n682.First_Name.txt.gz person_name                 
 mdcw-n682.Last_Name.txt.gz  person_name                 
 mdcw-n682.Middle_Initial.txt.gz other                   
-mjux-q9d4.SCHOOL_LEVEL_.txt.gzv school_level                    
+mjux-q9d4.SCHOOL_LEVEL_.txt.gz school_level                    
 mqdy-gu73.Color.txt.gz  color                   
 qbce-2kcu.COMPARABLE_RENTAL___2__Neighborhood.txt.gz    Neighborhood
 pf3n-zn2m.StreetAddress.txt.gz    Address
@@ -251,7 +251,7 @@ n84m-kx4j.VEHICLE_MAKE.txt.gz    Car_make
 pdpg-nn8i.SCHOOL_NAME.txt.gz    School_Name
 pchn-eaxn.School_Name.txt.gz    School_Name
 qpm9-j523.org_neighborhood.txt.gz    Neighborhood
-yahh-6yjc.School_Type.txt.gz    School_Types
+yahh-6yjc.School_Type.txt.gz    School_Levels
 wvts-6tdf.Address.txt.gz    Address
 sqcr-6mww.Street_Name.txt.gz    Street_Name
 t8hj-ruu2.Business_Phone_Number.txt.gz    Phone_Number

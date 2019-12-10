@@ -6,7 +6,7 @@ import re
 from pyspark import SparkContext
 from pyspark.sql import SparkSession
 from operator import add
-from fuzzywuzzy import process
+from fuzzywuzzy import process, fuzz
 # from names_dataset import NameDataset
 
 threshold = 80
@@ -14,8 +14,9 @@ threshold = 80
 def initLists():
     global cities, color, car_make, borough, school_level, building_class, vehicle_type, subjects, color, areas, neighbor, agencies, location, nameset
 
-    city = sc.textFile("uscities.csv")
-    cities = city.map(lambda x: x.split(',')[0].strip('\"')).collect()
+    # city = sc.textFile("uscities.csv")
+    # cities = city.map(lambda x: x.split(',')[0].strip('\"')).collect()
+    cities = sc.textFile("cities.txt").collect()
     neighbor = sc.textFile("neighborhood.txt").collect()
     car_make = ['abarth', 'alfa romeo', 'aston martin', 'audi', 'bentley', 'bmw', 'bugatti', 'cadillac', 'chevrolet', 'chrysler', 'citroen', 'dacia', 'daewoo', 'daihatsu', 'dodge', 'donkervoort', 'ds', 'ferrari', 'fiat', 'fisker', 'ford', 'honda', 'hummer', 'hyundai', 'infiniti', 'iveco', 'jaguar', 'jeep', 'kia', 'ktm', 'lada', 'lamborghini', 'lancia', 'land rover', 'landwind', 'lexus', 'lotus', 'maserati', 'maybach', 'mazda', 'mclaren', 'mercedes-benz', 'mg', 'mini', 'mitsubishi', 'morgan', 'nissan', 'opel', 'peugeot', 'porsche', 'renault', 'rolls-royce', 'rover', 'saab', 'seat', 'skoda', 'smart', 'ssangyong', 'subaru', 'suzuki', 'tesla', 'toyota', 'volkswagen', 'volvo']
     borough = ['bronx', 'brooklyn', 'manhattan', 'queens', 'staten island']
@@ -42,12 +43,15 @@ def initLists():
     company_suffix = ('architecture', 'corp', 'inc', 'group', 'design', 'consulting', 'service', 'mall', 'taste', 'fusion', 'llc', 'pllc', 'deli', 'pizza', 'restaurant', 'chinese', 'shushi', 'bar', 'snack', 'cafe', 'coffee', 'kitchen', 'grocery', 'food', 'farm', 'market', 'wok', 'gourmet', 'p.c.', 'burger', 'engineering', 'laundromat', 'wine', 'liquors', 'garden', 'diner', 'cuisine', 'place', 'cleaners', 'pizzeria', 'shop', 'inc.', 'architect', 'engineer', 'china')
     # company_suffix = ("inc.", "inc", "corp.", "llc", "corp", "deli", "construction", "grocery", "auto", "new","food", "contracting", "wireless", "laundromat", "home", "michael", "john", "market","corporation", "cleaners", "joseph", "group", "parking", "robert", "construction,","services", "gourmet", "general", "david", "anthony", "shop", "james", "jose", "ltd.","service", "street", "improvement", "store", "repair", "grocery,", "richard", "laundry","william", "design", "avenue", "convenience", "jewelry", "mini", "thomas", "center","daniel", "management", "services,", "york", "star", "express", "ave", "christopher", "park","cleaners,", "east", "singh,", "restaurant", "dry", "laundromat,", "city", "best", "george","builders", "frank", "peter", "luis", "nyc", "contracting,", "towing", "gold", "garage","candy", "group,", "steven", "paul", "enterprises", "juan", "one", "restoration", "jr,","mobile", "deli,", "mark", "incorporated", "electronics", "grill", "west", "usa", "stop","meat", "edward", "medical", "carlos", "charles", "mohammed", "mart", "st.", "co.,", "tire","kevin", "green", "rodriguez,", "renovation", "development", "super", "car", "company","nicholas", "solutions", "pharmacy", "andrew", "news", "market,", "recovery", "remodeling","broadway", "sales", "family", "contractors", "collision", "american", "painting", "fruit","mohammad", "cleaner", "brian", "supply", "l.l.c.", "supermarket", "king", "trading","smoke", "improvements", "international", "discount", "renovations", "vincent", "lee,","cafe", "matthew", "enterprises,", "patrick", "island", "tech", "brothers", "kim,","brooklyn", "stephen", "victor", "ronald", "body", "mohamed", "eric", "lucky", "jason","kenneth", "ali", "jonathan", "plus", "williams,", "alexander", "world", "associates,","ltd", "building", "clean", "united", "interiors", "jeffrey", "fresh", "ave.", "automotive","first", "metro", "ny,", "associates", "gonzalez,", "farm", "wash", "maria", "sons","smith,", "maintenance", "care", "big", "furniture", "angel", "quality", "computer", "chen,","louis", "enterprise", "lopez,", "custom")
 
-    global semantic_types, type_list
+    global functionToTypes, typeToFunction, type_list
     type_list = ["Person Name", "Business name", "Phone Number", "Address", "Street name", "City", "Neighborhood", "LAT/LON coordinates", "Zip code", "Borough", "School name", "Color","Car make", "City agency", "Areas of study", "Subjects in school", "School Levels", "College/University names", "Websites", "Building Classification", "Vehicle Type", "Type of location", "Parks/Playgrounds", "other"]
-    semantic_types = {isPersonName: "Person Name", isBussinessName: "Business name", isPhoneNumber: "Phone Number", isAddress: "Address", isStreetName: "Street name", isCity: "City", 
+    functionToTypes = {isPersonName: "Person Name", isBussinessName: "Business name", isPhoneNumber: "Phone Number", isAddress: "Address", isStreetName: "Street name", isCity: "City", 
                       isNeighborhood: "Neighborhood", isCoordinates: "LAT/LON coordinates", isZipcode: "Zip code", isBorough: "Borough", isSchool: "School name", isColor: "Color",
                       isCarMake: "Car make", isAgency: "City agency", isStudyArea: "Areas of study", isSubject: "Subjects in school", isSchoolLevel: "School Levels", isCollege: "College/University names",
-                      isWebsite: "Websites", isBuildingClass: "Building Classification", isVehicleType: "Vehicle Type", isLocationType: "Type of location", isPark: "Parks/Playgrounds"}
+                      isWebsite: "Websites", isBuildingClass: "Building Classification", isVehicleType: "Vehicle Type", isLocationType: "Type of location", isPark: "Parks/Playgrounds", isOther: "other"}
+    typeToFunction = {}
+    for func in functionToTypes:
+        typeToFunction[functionToTypes[func]] = func
 
 class Column:
     column_name = ""
@@ -121,7 +125,9 @@ def isStreetName(keyword):
         return False
 
 def isCity(keyword):
-    return keyword in cities
+    if checkItemInList(keyword, cities) or keyword.endswith('city'):
+        return True
+    return False
 
 def isNeighborhood(keyword):
     return checkItemInList(keyword, neighbor)
@@ -178,13 +184,18 @@ def isLocationType(keyword):
 def isPark(keyword):
     return re.match(park_pattern, keyword)
 
+def isOther(keyword):
+    if len(keyword) == 1 and re.match(re.compile(r'[`\-\.a-z0-9]'), keyword):
+        return True
+    return False
+
 def getSemanticType(keyword, strategy):
     if keyword is None or len(keyword) == 0:
         return -1
     keyword_type = 'other'
     for checkFunction in strategy:
         if checkFunction(keyword):
-            return semantic_types[checkFunction]
+            return functionToTypes[checkFunction]
     return 'other'
 
 def checkSemanticType(input, strategy):
@@ -203,33 +214,72 @@ def checkSemanticType(input, strategy):
     return ((result[0], result[1]), (result[2], result[3]))
 
 def getStrategy(column_name):
+    strategy = [match[0] for match in process.extract(column_name, type_list, limit=len(typeToFunction))]
+    # if 'other' in strategy:
+    #     strategy.remove('other')
+    strategy = [typeToFunction[currtype] for currtype in strategy]
     if 'name' in column_name:
         return [isCollege, isCity, isPark, isNeighborhood, isSchool, isAgency, isAddress, isStreetName, isBussinessName, isPhoneNumber, isZipcode, isWebsite, isCoordinates, isBorough, isColor, isSubject, isStudyArea, isSchoolLevel, isBuildingClass, isVehicleType, isLocationType, isPersonName]
     else:
-        return [isPhoneNumber, isZipcode, isWebsite, isCoordinates, isBorough, isColor, isSubject, isStudyArea, isSchoolLevel, isCollege, isBuildingClass, isVehicleType, isCity, isLocationType, isPark, isNeighborhood, isSchool, isAgency, isAddress, isStreetName, isBussinessName, isPersonName]
+        strategy.remove(isPersonName)
+    if 'vehicle' in column_name:
+        if isCarMake in strategy:
+            strategy.remove(isCarMake)
+        strategy.insert(1, isCarMake)
+    elif 'city' in column_name:
+        if isNeighborhood in strategy:
+            strategy.remove(isNeighborhood)
+        strategy.insert(1, isNeighborhood)
+        if isBorough in strategy:
+            strategy.remove(isBorough)
+        strategy.insert(1, isBorough)
+    return strategy
 
 def getPredictedLabel(labels):
-    sum_count = 0
-    for label in labels:
-        sum_count += label[1][0]
-    predicted = [labels[0][0][0]]
-    predicted_percent = [labels[0][1][0] / sum_count]
+    getMaxPerc = [labels[0]]
+    max_percent = labels[0][1][0]
     for label in labels[1:]:
-        currPercent = label[1][0] / sum_count
-        if currPercent > 0.3 or predicted_percent[-1] - currPercent < 0.1:
+        if label[1][0] / max_percent > 0.5:
+            getMaxPerc.append(label)
+        else:
+            break
+    labels = sorted(labels, key=lambda x:x[1][2], reverse=True)
+    if labels[0] not in getMaxPerc and labels[0][0][0] != 'other':
+        getMaxPerc.append(labels[0])
+    labels = sorted(labels, key=lambda x:x[1][1], reverse=True)
+    if labels[0] not in getMaxPerc and labels[0][0][0] != 'other':
+        getMaxPerc.append(labels[0])
+    getMaxPerc = sorted(getMaxPerc, key=lambda x:x[1][1], reverse=True)
+    print(getMaxPerc)
+    max_count = getMaxPerc[0][1][1]
+    index = 1
+    for label in getMaxPerc[1:]:
+        if label[1][1] / float(max_count) > 0.33:
+            index += 1
+        else:
+            break
+    getMaxPerc = getMaxPerc[:index]
+    getMaxPerc = sorted(getMaxPerc, key=lambda x:x[1][2], reverse=True)
+    predicted = [getMaxPerc[0][0][0]]
+    max_count = getMaxPerc[0][1][2]
+    for label in getMaxPerc[1:]:
+        if label[1][2] / float(max_count) > 0.33:
             predicted.append(label[0][0])
-            predicted_percent.append(currPercent)
-    if len(predicted) > 2:
-        return predicted[:2]
-    else:
-        return predicted
+        else:
+            break
+    if len(predicted) > 1 and 'other' in predicted:
+        predicted.remove('other')
+    # if len(predicted) > 2:
+    #     return predicted[:2]
+    # else:
+    return predicted
 
 if __name__ == "__main__":
     sc = SparkContext()
     initLists()
 
     # /user/hm74/NYCOpenData/
-    path = "/user/hm74/NYCColumns/"
+    path = "./NYCColumns/"
 
     cluster = open("cluster1.txt", 'r')
     task2_files = [file.strip().strip('\'') for file in cluster.read().strip('[]').split(',')]
@@ -242,21 +292,29 @@ if __name__ == "__main__":
     column_type_matrix = [[0 for i in range(len(type_list))] for j in range(len(type_list))]
 
     for file in task2_files:
-        if os.stat('./NYCColumns/' + file).st_size > 10000:
+        if os.stat('./NYCColumns/' + file).st_size > 1000:
+        # if 'city' not in file.lower():
             continue
         print("Processing File %s" % file)
         column_name = file.split('.')[0] + '.' + file.split('.')[1]
         currColumn = Column(column_name)
         # check strategy
-        checkStrategy = getStrategy(column_name)
+        checkStrategy = getStrategy(file.split('.')[1].lower())
         column = sc.textFile(path + file)
         column = column.map(lambda x: (x.split("\t")[0], int(x.split("\t")[1]))) \
                        .map(lambda x: checkSemanticType(x, checkStrategy)) \
                        .reduceByKey(lambda x, y: (x[0] + y[0], x[1] + y[1])) \
+                       .map(lambda x: ((x[0][0], x[0][1]), (float(x[1][1]) / x[1][0], x[1][0], x[1][1]))) \
                        .sortBy(lambda x: -x[1][0])
 
         items = column.collect()
-        predictedLabel = [getPredictedLabel(items)]
+        # # for item in items:
+        # #     #if item[0][0] == 'City agency':
+        # #     print(item)
+        # print(items)
+        predictedLabel = getPredictedLabel(items)
+        print('Predicted Label:')
+        print(predictedLabel)
         column_types[column_name] = predictedLabel
         # for item in items:
         #     #if item[0][0] == 'other':
@@ -276,28 +334,28 @@ if __name__ == "__main__":
         column_name = line.split(' ')[0][:-7]
         if column_name not in column_types:
             continue
-        print(column_name)
         column_true_type = line.split(' ')[-1]
-        print(column_true_type)
         true_type_index = type_list.index(process.extractOne(column_true_type, type_list)[0])
-        print("true type index %d" % (true_type_index))
-        print("predicted types")
-        print(column_types[column_name])
+        if len(column_types[column_name]) != 1 or fuzz.token_sort_ratio(column_types[column_name][0], column_true_type.replace('_', ' ')) < threshold:
+            print(column_name)
+            print("true type index %s" % (column_true_type))
+            print("predicted types %s\n" % str(column_types[column_name]))
         predicted_index_list = [type_list.index(predicted_type) for predicted_type in column_types[column_name]]
-        print("predicted type index")
-        print(predicted_index_list)
         column_true_count[true_type_index] += 1
         for predicted_index in predicted_index_list:
             column_predicted_count[predicted_index] += 1
             column_type_matrix[true_type_index][predicted_index] += 1
+    true_types_file.close()
 
     precision_recall = [[0, 0] for i in range(len(type_list))]
     print("true type count")
-    print(column_true_count)
+    print('\t'.join(str(item) for item in column_true_count))
     print("predicted type count")
-    print(column_predicted_count)
+    print('\t'.join(str(item) for item in column_predicted_count))
     print("matrix")
-    print(column_type_matrix)
+    for line in column_type_matrix:
+        string = '\t'.join(str(item) for item in line)
+        print(string)
 
     for i in range(len(type_list)):
         if column_predicted_count[i] != 0:
@@ -305,10 +363,13 @@ if __name__ == "__main__":
         if column_true_count[i] != 0:
             precision_recall[i][1] = float(column_type_matrix[i][i]) / column_true_count[i]
 
-    print(precision_recall)
+    print('\t\tprecision\trecall')
+    for i in range(len(type_list)):
+        print('%s\t%.2f\t%.2f' % (type_list[i], precision_recall[i][0], precision_recall[i][1]))
 
-    # resultFile.close()
-    # print(column_list)
+    write_file = open('task2.json', 'w+')
+    json.dump(column_list, write_file, default=lambda x: x.__dict__, sort_keys=True)
+    write_file.close()
     sc.stop()
 
 # spark-submit --conf spark.pyspark.python=$/Library/Frameworks/Python.framework/Versions/3.7/bin/python3 task2.py
