@@ -34,7 +34,7 @@ def initLists():
     address_pattern = re.compile(r'[0-9 ]+([0-9]*[(th)(st)(nd)(rd)] *)?[a-z0-9\. ]*')
     street_pattern = re.compile(r'([0-9]*[(th)(st)(nd)(rd)] *)?[a-z0-9\. ]*')
     school_pattern = re.compile(r'^([a-z ])*school[a-z0-9\-\.\, ]+|[a-z0-9\-\.\, ]*school|[a-z0-9\-\.\, ]*academy|[a-z0-9\-\.\, ]*institute')
-    park_pattern = re.compile(r'[a-z0-9\-\'\.\(\) ]*park|[a-z0-9\-\'\.\(\) ]*playground|[a-z0-9\-\'\.\(\) ]*garden|[a-z0-9\-\'\.\(\) ]*center|[a-z0-9\-\'\.\(\) ]*field|[a-z0-9\-\'\.\(\) ]*square|[a-z0-9\-\'\.\(\) ]*beach|[a-z0-9\-\'\.\(\) ]*ground|[a-z0-9\-\'\.\(\) ]*pk$')
+    park_pattern = re.compile(r'[a-z0-9\-\'\.\(\) ]*park|[a-z0-9\-\'\.\(\) ]*playground|[a-z0-9\-\'\.\(\) ]*garden|[a-z0-9\-\'\.\(\) ]*center|[a-z0-9\-\'\.\(\) ]*field|[a-z0-9\-\'\.\(\) ]*square|[a-z0-9\-\'\.\(\) ]*beach|[a-z0-9\-\'\.\(\) ]*ground|[a-z0-9\-\'\.\(\) ]*ground|[a-z0-9\-\'\.\(\) ]*pk$')
     website_pattern = re.compile(r'http[s]?:\/\/|www\.|[a-z0-9\.\-_]*\.org|[a-z0-9\.\-_]*\.com|[a-z0-9\.\-_]*\.edu|[a-z0-9\.\-_]*\.gov|[a-z0-9\.\-_]*\.net|[a-z0-9\.\-_]*\.info|[a-z0-9\.\-_]*\.us|[a-z0-9\.\-_]*\.nyc')
 
     global street_suffix, company_suffix
@@ -229,7 +229,7 @@ if __name__ == "__main__":
     initLists()
 
     # /user/hm74/NYCOpenData/
-    path = "./NYCColumns/"
+    path = "/user/hm74/NYCColumns/"
 
     cluster = open("cluster1.txt", 'r')
     task2_files = [file.strip().strip('\'') for file in cluster.read().strip('[]').split(',')]
@@ -242,7 +242,7 @@ if __name__ == "__main__":
     column_type_matrix = [[0 for i in range(len(type_list))] for j in range(len(type_list))]
 
     for file in task2_files:
-        if os.stat(path + file).st_size > 10000:
+        if os.stat('./NYCColumns/' + file).st_size > 1000:
             continue
         print("Processing File %s" % file)
         column_name = file.split('.')[0] + '.' + file.split('.')[1]
@@ -295,12 +295,18 @@ if __name__ == "__main__":
             column_type_matrix[true_type_index][predicted_index] += 1
 
     precision_recall = [[0, 0] for i in range(len(type_list))]
+    print("true type count")
+    print(column_true_count)
+    print("predicted type count")
+    print(column_predicted_count)
+    print("matrix")
+    print(column_type_matrix)
 
     for i in range(len(type_list)):
         if column_predicted_count[i] != 0:
-            precision_recall[i][0] = column_type_matrix[i][i] / column_predicted_count[i]
+            precision_recall[i][0] = float(column_type_matrix[i][i]) / column_predicted_count[i]
         if column_true_count[i] != 0:
-            precision_recall[i][1] = column_type_matrix[i][i] / column_true_count[i]
+            precision_recall[i][1] = float(column_type_matrix[i][i]) / column_true_count[i]
 
     print(precision_recall)
 
