@@ -279,7 +279,7 @@ if __name__ == "__main__":
     initLists()
 
     # /user/hm74/NYCOpenData/
-    path = "./NYCColumns/"
+    path = "/user/hm74/NYCColumns/"
 
     cluster = open("cluster1.txt", 'r')
     task2_files = [file.strip().strip('\'') for file in cluster.read().strip('[]').split(',')]
@@ -292,9 +292,9 @@ if __name__ == "__main__":
     column_type_matrix = [[0 for i in range(len(type_list))] for j in range(len(type_list))]
 
     for file in task2_files:
-        if os.stat('./NYCColumns/' + file).st_size > 1000:
-        # if 'city' not in file.lower():
-            continue
+        # if os.stat('./NYCColumns/' + file).st_size > 1000:
+        # # if 'city' not in file.lower():
+        #     continue
         print("Processing File %s" % file)
         column_name = file.split('.')[0] + '.' + file.split('.')[1]
         currColumn = Column(column_name)
@@ -363,9 +363,9 @@ if __name__ == "__main__":
         if column_true_count[i] != 0:
             precision_recall[i][1] = float(column_type_matrix[i][i]) / column_true_count[i]
 
-    print('\t\tprecision\trecall')
+    print('precision\trecall')
     for i in range(len(type_list)):
-        print('%s\t%.2f\t%.2f' % (type_list[i], precision_recall[i][0], precision_recall[i][1]))
+        print('%f\t%f' % (type_list[i], precision_recall[i][0], precision_recall[i][1]))
 
     write_file = open('task2.json', 'w+')
     json.dump(column_list, write_file, default=lambda x: x.__dict__, sort_keys=True)
