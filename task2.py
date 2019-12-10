@@ -43,7 +43,7 @@ def initLists():
     # company_suffix = ("inc.", "inc", "corp.", "llc", "corp", "deli", "construction", "grocery", "auto", "new","food", "contracting", "wireless", "laundromat", "home", "michael", "john", "market","corporation", "cleaners", "joseph", "group", "parking", "robert", "construction,","services", "gourmet", "general", "david", "anthony", "shop", "james", "jose", "ltd.","service", "street", "improvement", "store", "repair", "grocery,", "richard", "laundry","william", "design", "avenue", "convenience", "jewelry", "mini", "thomas", "center","daniel", "management", "services,", "york", "star", "express", "ave", "christopher", "park","cleaners,", "east", "singh,", "restaurant", "dry", "laundromat,", "city", "best", "george","builders", "frank", "peter", "luis", "nyc", "contracting,", "towing", "gold", "garage","candy", "group,", "steven", "paul", "enterprises", "juan", "one", "restoration", "jr,","mobile", "deli,", "mark", "incorporated", "electronics", "grill", "west", "usa", "stop","meat", "edward", "medical", "carlos", "charles", "mohammed", "mart", "st.", "co.,", "tire","kevin", "green", "rodriguez,", "renovation", "development", "super", "car", "company","nicholas", "solutions", "pharmacy", "andrew", "news", "market,", "recovery", "remodeling","broadway", "sales", "family", "contractors", "collision", "american", "painting", "fruit","mohammad", "cleaner", "brian", "supply", "l.l.c.", "supermarket", "king", "trading","smoke", "improvements", "international", "discount", "renovations", "vincent", "lee,","cafe", "matthew", "enterprises,", "patrick", "island", "tech", "brothers", "kim,","brooklyn", "stephen", "victor", "ronald", "body", "mohamed", "eric", "lucky", "jason","kenneth", "ali", "jonathan", "plus", "williams,", "alexander", "world", "associates,","ltd", "building", "clean", "united", "interiors", "jeffrey", "fresh", "ave.", "automotive","first", "metro", "ny,", "associates", "gonzalez,", "farm", "wash", "maria", "sons","smith,", "maintenance", "care", "big", "furniture", "angel", "quality", "computer", "chen,","louis", "enterprise", "lopez,", "custom")
 
     global semantic_types, type_list
-    type_list = ["Person Name", "Business name", "Phone Number", "Address", "Street name", "City", "Neighborhood", "LAT/LON coordinates", "Zip code", "Borough", "School name", "Color","Car make", "City agency", "Areas of study", "Subjects in school", "School Levels", "College/University names", "Websites", "Building Classification", "Vehicle Type", "Type of location", "Parks/Playgrounds"]
+    type_list = ["Person Name", "Business name", "Phone Number", "Address", "Street name", "City", "Neighborhood", "LAT/LON coordinates", "Zip code", "Borough", "School name", "Color","Car make", "City agency", "Areas of study", "Subjects in school", "School Levels", "College/University names", "Websites", "Building Classification", "Vehicle Type", "Type of location", "Parks/Playgrounds", "other"]
     semantic_types = {isPersonName: "Person Name", isBussinessName: "Business name", isPhoneNumber: "Phone Number", isAddress: "Address", isStreetName: "Street name", isCity: "City", 
                       isNeighborhood: "Neighborhood", isCoordinates: "LAT/LON coordinates", isZipcode: "Zip code", isBorough: "Borough", isSchool: "School name", isColor: "Color",
                       isCarMake: "Car make", isAgency: "City agency", isStudyArea: "Areas of study", isSubject: "Subjects in school", isSchoolLevel: "School Levels", isCollege: "College/University names",
@@ -198,15 +198,15 @@ def checkSemanticType(input, strategy):
     #     result[0] = semantic_types[6]
     # else:
     #     result[0] = semantic_types[-1]
-    if result[0] == "other":
-        result[1] = key
+    # if result[0] == "other":
+    #     result[1] = key
     return ((result[0], result[1]), (result[2], result[3]))
 
 def getStrategy(column_name):
     # if "first" in name:
     #     return "Name"
     # else:
-    return [isPhoneNumber, isZipcode, isWebsite, isCoordinates, isBorough, isColor, isStudyArea, isSubject, isSchoolLevel, isCollege, isBuildingClass, isVehicleType, isCity, isNeighborhood, isSchool, isAgency, isLocationType, isPark, isStreetName, isAddress, isBussinessName, isPersonName]
+    return [isPhoneNumber, isZipcode, isWebsite, isCoordinates, isBorough, isColor, isStudyArea, isSubject, isSchoolLevel, isCollege, isBuildingClass, isVehicleType, isCity, isNeighborhood, isSchool, isAgency, isLocationType, isPark, isAddress, isStreetName, isBussinessName, isPersonName]
 
 def getPredictedLabel(labels):
     sum_count = 0
@@ -241,10 +241,10 @@ if __name__ == "__main__":
     column_true_count = [0 for i in range(len(type_list))]
     column_type_matrix = [[0 for i in range(len(type_list))] for j in range(len(type_list))]
 
-    count = 0
-    for file in task2_files[1:5]:
+    for file in task2_files:
+        if os.stat(path + file).st_size > 10000:
+            continue
         print("Processing File %s" % file)
-        count += 1
         column_name = file.split('.')[0] + '.' + file.split('.')[1]
         currColumn = Column(column_name)
         # check strategy
@@ -253,21 +253,23 @@ if __name__ == "__main__":
         column = column.map(lambda x: (x.split("\t")[0], int(x.split("\t")[1]))) \
                        .map(lambda x: checkSemanticType(x, checkStrategy)) \
                        .reduceByKey(lambda x, y: (x[0] + y[0], x[1] + y[1])) \
-                       .sortBy(lambda x: -x[1][0])
-        items = column.collect()
-        predictedLabel = [getPredictedLabel(items)]
+                       .sortBy(lambda x: -x[1][0]) \
+                       .take(2)
+                       # .filter(lambda x: x[1][0] > 1000) \
+
+        # items = column.collect()
+        # predictedLabel = [getPredictedLabel(items)]
+        predictedLabel = [item[0][0] for item in column]
         column_types[column_name] = predictedLabel
         # for item in items:
         #     #if item[0][0] == 'other':
         #     print item
-        currColumn.semantic_types = [SemanticType(item[0][0], item[0][1], item[1][1]) for item in items]
+        currColumn.semantic_types = [SemanticType(item[0][0], item[0][1], item[1][1]) for item in column]
         
         column_list.append(currColumn)
         print("Column %s predicted label is %s" % (column_name, predictedLabel))
         # print(json.dumps(currColumn, default=lambda x: x.__dict__))
         print("File %s finish" % file)
-        if count >= 5:
-            break
 
     print(column_types)
 
@@ -280,10 +282,11 @@ if __name__ == "__main__":
         print(column_name)
         column_true_type = line.split(' ')[-1]
         print(column_true_type)
-        column_types[column_name].insert(0, column_true_type)
         true_type_index = type_list.index(process.extractOne(column_true_type, type_list)[0])
         print("true type index %d" % (true_type_index))
-        predicted_index_list = [type_list.index(predicted_type) for predicted_type in column_types[column_name][1]]
+        print("predicted types")
+        print(column_types[column_name])
+        predicted_index_list = [type_list.index(predicted_type) for predicted_type in column_types[column_name]]
         print("predicted type index")
         print(predicted_index_list)
         column_true_count[true_type_index] += 1
@@ -294,8 +297,10 @@ if __name__ == "__main__":
     precision_recall = [[0, 0] for i in range(len(type_list))]
 
     for i in range(len(type_list)):
-        precision_recall[i][0] = column_type_matrix[i][i] / column_predicted_count[i]
-        precision_recall[i][1] = column_type_matrix[i][i] / column_true_count[i]
+        if column_predicted_count[i] != 0:
+            precision_recall[i][0] = column_type_matrix[i][i] / column_predicted_count[i]
+        if column_true_count[i] != 0:
+            precision_recall[i][1] = column_type_matrix[i][i] / column_true_count[i]
 
     print(precision_recall)
 
