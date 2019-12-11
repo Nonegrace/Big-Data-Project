@@ -75,9 +75,9 @@ def print_obj(obj):
 def checkBaseType(col_name, x):
     if x == None or "":
         return "NONE"
-    elif re.match(r"^([0-9]{1,})$", x):
+    elif re.match(r"^-?[1-9]\d*$", x):
         return "INT"
-    elif re.match(r"^([0-9]{1,}[.][0-9]*)$", x):
+    elif re.match(r"^-?([1-9]\d*\.\d*|0\.\d*[1-9]\d*|0?\.0+|0)$", x):
         return "REAL"
     elif len(x)>4 :
         try:
@@ -172,7 +172,6 @@ def dealwithfile(filename):
 
 path = "./NYCOpenData/"
 files = sorted(os.listdir(path))
-files = files[0:]
 sc = SparkContext()
 '''
 for file in files:
@@ -180,7 +179,9 @@ for file in files:
     dealwithfile(file)
 sc.stop()
 '''
+
 count = 0
+#for file in files:
 for file in files:
     spark = SparkSession.builder \
                         .appName("bigdata") \
@@ -199,5 +200,4 @@ for file in files:
         w.close()
 sc.stop()
 
-#29bw-z7pj
 
