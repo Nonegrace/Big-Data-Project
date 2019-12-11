@@ -7,15 +7,12 @@ from pyspark import SparkContext
 from pyspark.sql import SparkSession
 from operator import add
 from fuzzywuzzy import process, fuzz
-# from names_dataset import NameDataset
 
 threshold = 80
 
 def initLists():
     global cities, color, car_make, borough, school_level, vehicle_type, subjects, color, areas, neighbor, agencies, location, nameset
 
-    # city = sc.textFile("uscities.csv")
-    # cities = city.map(lambda x: x.split(',')[0].strip('\"')).collect()
     cities = sc.textFile("cities.txt").collect()
     neighbor = sc.textFile("neighborhood.txt").collect()
     car_make = ['abarth', 'alfa romeo', 'aston martin', 'audi', 'bentley', 'bmw', 'bugatti', 'cadillac', 'chevrolet', 'chrysler', 'citroen', 'dacia', 'daewoo', 'daihatsu', 'dodge', 'donkervoort', 'ds', 'ferrari', 'fiat', 'fisker', 'ford', 'honda', 'hummer', 'hyundai', 'infiniti', 'iveco', 'jaguar', 'jeep', 'kia', 'ktm', 'lada', 'lamborghini', 'lancia', 'land rover', 'landwind', 'lexus', 'lotus', 'maserati', 'maybach', 'mazda', 'mclaren', 'mercedes-benz', 'mg', 'mini', 'mitsubishi', 'morgan', 'nissan', 'opel', 'peugeot', 'porsche', 'renault', 'rolls-royce', 'rover', 'saab', 'seat', 'skoda', 'smart', 'ssangyong', 'subaru', 'suzuki', 'tesla', 'toyota', 'volkswagen', 'volvo']
@@ -27,7 +24,6 @@ def initLists():
     areas = ['animal science', 'architecture', 'business', 'communications', 'computer science & technology', 'cosmetology', 'culinary arts', 'engineering', 'environmental science', 'film/video', 'health professions', 'hospitality, travel, & tourism', 'humanities & interdisciplinary', 'jrotc', 'law & government', 'performing arts', 'performing arts/visual art & design', 'science & math', 'teaching', 'visual art & design', 'zoned']
     agencies = ["NYCOA", "AJC", "OATH", "DFTA", "MOA", "BPL", "DOB", 'BIC', 'CFB', 'CIDI', 'OCME', 'ACS', 'CLERK', 'DCP', 'CUNY', 'DCAS', 'CECM', 'CEC', 'CSC', 'CCRB', 'CGE', 'CCPC', 'CAU', 'CB', 'COMP', 'COIB', 'DCA', 'DCWP', 'MOCS', 'BOC', 'DOC', 'DCLA', 'MODA', 'DDC', 'DOE', 'BOE', 'MOEC', 'DEP', 'EEPC', 'DOF', 'FDNY', 'GNYC', 'DOHMH', 'DHS', 'NYCHA', 'HPD', 'HRO', 'HRA', 'CCHR', 'MOIA', 'IBO', 'MOIP', 'DOITT', 'MOIGA', 'DOI', 'MACJ', 'OLR', 'LPC', 'LAW', 'BPL', 'NYPL', 'QL', 'LOFT', 'OMB', 'MCCM', 'OM', 'IA', 'MOPD', 'OER', 'MOSPCE', 'OMWBE', 'OSP', 'ENDGBV', 'MOME', 'NYCGO', 'NYCEDC', 'NYCERS', 'SERVICE', 'TFA', 'NYPL', 'OPS', 'DPR', 'OPA', 'NYPD', 'PPF', 'DOP', 'PPB', 'BCPA', 'KCPA', 'QPA', 'RCPA', 'PUB ADV', 'QPL', 'DORIS', 'RGB', 'STAR', 'DSNY', 'SCA', 'SBS', 'DSS', 'OSE', 'SNP', 'BSA', 'TAT', 'TC', 'TLC', 'DOT', 'DVS', 'NYWB', 'NYW', 'DYCD', '311']
     location = ['building', 'terminal', 'atm', 'bank', 'bar', 'club', 'salon', 'bridge', 'stop', 'cemetery', 'church', 'clothing', 'boutique', 'site', 'facility', 'office', 'cleaner', 'laundry', 'factory', 'warehouse', 'fast food', 'supermarket', 'station', 'grocery', 'bodega', 'gym', 'fitness', 'highway', 'parkway', 'shelter', 'hospital', 'hotel', 'motel', 'jewelry', 'company', 'inside', 'outside', 'marina', 'pier', 'mosque', 'park', 'playground', 'parking lot', 'garage', 'school', 'restaurant', 'diner', 'shoe', 'merchant', 'synagogue', 'tramway', 'subway', 'tunnel', 'store']
-    # nameset = NameDataset()
 
     global phone_pattern, address_pattern, street_pattern, coordinate_pattern, zip_pattern, school_pattern, park_pattern, website_pattern, building_pattern
 
@@ -78,7 +74,6 @@ class MyEncoder(json.JSONEncoder):
 
 def checkItemInList(keyword, keyword_list):
     matched = process.extractOne(keyword, keyword_list)
-    # return matched
     if matched[1] > threshold:
         return True
     else:   
@@ -86,17 +81,10 @@ def checkItemInList(keyword, keyword_list):
 
 def isPersonName(keyword):
     if re.compile(r'^[a-z]*, *[a-z]*|[a-z]*').match(keyword):
-        # first_name = keyword.split(',')[0].strip()
-        # last_name = keyword.split(',')[1].strip()
-        # if (first_name == '' or nameset.search_first_name(first_name)) and (last_name == '' or nameset.search_last_name(last_name)):
         return True
     return False
 
 def isBussinessName(keyword):
-    # if keyword.endswith(company_suffix):
-    #     return True
-    # else:
-    #     return False
     for suffix in company_suffix:
         if suffix in keyword:
             return True
@@ -208,8 +196,6 @@ def checkSemanticType(input, strategy):
 def getStrategy(column_name):
     strategy = [match for match in process.extract(column_name, type_list, limit=len(typeToFunction))]
     strategy = [item[0] for item in strategy if item[1] > 40]
-    # if 'other' in strategy:
-    #     strategy.remove('other')
     strategy = [typeToFunction[currtype] for currtype in strategy]
     if 'vehicle' in column_name:
         if isCarMake in strategy:
@@ -271,17 +257,13 @@ def getPredictedLabel(labels):
             break
     if len(predicted) > 1 and 'other' in predicted and 'other' != predicted[0]:
         predicted.remove('other')
-    # if len(predicted) > 2:
-    #     return predicted[:2]
-    # else:
     return predicted
 
 if __name__ == "__main__":
     sc = SparkContext()
     initLists()
 
-    # /user/hm74/NYCOpenData/
-    path = "/user/hm74/NYCColumns/"
+    path = "./NYCColumns/"
 
     cluster = open("cluster1.txt", 'r')
     task2_files = [file.strip().strip('\'') for file in cluster.read().strip('[]').split(',')]
@@ -294,13 +276,9 @@ if __name__ == "__main__":
     column_true_count = [0 for i in range(len(type_list))]
     column_type_matrix = [[0 for i in range(len(type_list))] for j in range(len(type_list))]
 
-    unvisit = []
-
     count = 0
     for file in task2_files:
-        if os.stat('./NYCColumns/' + file).st_size > 1024 * 700:
-        #     # unvisit.append(file)
-        # if 'location' not in file.lower():
+        if os.stat(path + file).st_size > 1024 * 500:
             continue
         count += 1
         print("Processing File %d %s" % (count, file))
@@ -315,28 +293,14 @@ if __name__ == "__main__":
                        .map(lambda x: ((x[0][0], x[0][1]), (float(x[1][1]) / x[1][0], x[1][0], x[1][1]))) \
                        .sortBy(lambda x: -x[1][0])
 
-        print(column.count())
-
         items = column.collect()
-        # for item in items:
-        #     # if item[0][0] == 'City agency':
-        #     print(item)
         predictedLabel = getPredictedLabel(items)
-        print('Predicted Label:')
-        print(predictedLabel)
         column_types[column_name] = predictedLabel
-        # for item in items:
-        #     #if item[0][0] == 'other':
-        #     print item
         currColumn.semantic_types = [SemanticType(item[0][0], item[0][1], item[1][2]) for item in items]
         
         column_list.append(currColumn)
         print("Column %s predicted label is %s" % (column_name, predictedLabel))
-        print(json.dumps(currColumn, default=lambda x: x.__dict__))
         print("File %d %s finish" % (count, file))
-
-    print('the number of files are %d' % count)
-    print(column_types)
 
     true_types_file = open("Manually_Label.txt", 'r')
     for line in true_types_file.readlines():
@@ -364,17 +328,13 @@ if __name__ == "__main__":
     print('\t'.join(str(item) for item in column_predicted_count))
     print("matrix")
     for line in column_type_matrix:
-        string = '\t'.join(str(item) for item in line)
-        print(string)
+        print(line)
 
     for i in range(len(type_list)):
         if column_predicted_count[i] != 0:
             precision_recall[i][0] = float(column_type_matrix[i][i]) / column_predicted_count[i]
         if column_true_count[i] != 0:
             precision_recall[i][1] = float(column_type_matrix[i][i]) / column_true_count[i]
-
-    print('unvistied')
-    print(unvisit)
 
     print('precision\trecall')
     for i in range(len(type_list)):
@@ -384,5 +344,3 @@ if __name__ == "__main__":
     json.dump(column_list, write_file, default=lambda x: x.__dict__, sort_keys=True)
     write_file.close()
     sc.stop()
-
-# spark-submit --conf spark.pyspark.python=$/Library/Frameworks/Python.framework/Versions/3.7/bin/python3 task2.py
