@@ -279,7 +279,7 @@ if __name__ == "__main__":
     initLists()
 
     # /user/hm74/NYCOpenData/
-    path = "/user/hm74/NYCColumns/"
+    path = "./NYCColumns/"
 
     cluster = open("cluster1.txt", 'r')
     task2_files = [file.strip().strip('\'') for file in cluster.read().strip('[]').split(',')]
@@ -291,11 +291,13 @@ if __name__ == "__main__":
     column_true_count = [0 for i in range(len(type_list))]
     column_type_matrix = [[0 for i in range(len(type_list))] for j in range(len(type_list))]
 
+    count = 0
     for file in task2_files:
-        # if os.stat('./NYCColumns/' + file).st_size > 1000:
-        # # if 'city' not in file.lower():
-        #     continue
-        print("Processing File %s" % file)
+        if os.stat('./NYCColumns/' + file).st_size > 10000:
+        # if 'city' not in file.lower():
+            continue
+        count += 1
+        print("Processing File %d %s" % (count, file))
         column_name = file.split('.')[0] + '.' + file.split('.')[1]
         currColumn = Column(column_name)
         # check strategy
@@ -324,8 +326,9 @@ if __name__ == "__main__":
         column_list.append(currColumn)
         print("Column %s predicted label is %s" % (column_name, predictedLabel))
         # print(json.dumps(currColumn, default=lambda x: x.__dict__))
-        print("File %s finish" % file)
+        print("File %d %s finish" % (count, file))
 
+    print('the number of files are %d' % count)
     print(column_types)
 
     true_types_file = open("Manually_Label.txt", 'r')
@@ -365,7 +368,7 @@ if __name__ == "__main__":
 
     print('precision\trecall')
     for i in range(len(type_list)):
-        print('%f\t%f' % (type_list[i], precision_recall[i][0], precision_recall[i][1]))
+        print('%f\t%f' % (precision_recall[i][0], precision_recall[i][1]))
 
     write_file = open('task2.json', 'w+')
     json.dump(column_list, write_file, default=lambda x: x.__dict__, sort_keys=True)
